@@ -939,9 +939,10 @@ function checkOverdueWorkers() {
             
             // App-side alert logic
             if (overdueMinutes > 0) {
-                 // Initial GPS check at 13 minutes
+                 // Initial GPS check at 13 minutes, now with audio/vibration
                 if (overdueMinutes >= 13 && state.activeVisit.alertState < 1.5) {
                     state.activeVisit.alertState = 1.5;
+                    playSoundAndVibrate('warning');
                     tryGetGps();
                 }
                 // Recurring GPS check every 20 minutes after the first one
@@ -1105,7 +1106,7 @@ function checkOverdueWorkers() {
         function init() {
              if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js').then(registration => {
+                    navigator.serviceWorker.register('./sw.js').then(registration => {
                         console.log('SW registered: ', registration);
                     }).catch(registrationError => {
                         console.log('SW registration failed: ', registrationError);
