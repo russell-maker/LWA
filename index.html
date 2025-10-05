@@ -19,7 +19,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/long-press-event/dist/long-press-event.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
@@ -128,7 +127,7 @@
                     </div>
         
                     <!-- Arrived Button -->
-                    <button id="arrivedBtn" data-long-press-delay="2000" disabled class="long-press-btn relative w-full bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 flex-shrink-0">
+                    <button id="arrivedBtn" disabled class="long-press-btn relative w-full bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 flex-shrink-0">
                         Select Location & Duration
                     </button>
                 </div>
@@ -153,16 +152,16 @@
                     <h3 class="text-xl font-bold text-red-300">ALERT ACTIVE</h3>
                     <p class="text-red-400">Automated emails have been sent to your contacts.</p>
                 </div>
-                <button id="iamSafeBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl mb-4">
+                <button id="iamSafeBtn" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl mb-4">
                     I AM SAFE
                 </button>
             </div>
 
             <div id="normalButtonsContainer" class="w-full space-y-4">
-                <button id="extendBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
+                <button id="extendBtn" class="long-press-btn relative w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
                     Extend 10 Mins
                 </button>
-                <button id="departBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
+                <button id="departBtn" class="long-press-btn relative w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
                     DEPART
                 </button>
             </div>
@@ -495,7 +494,7 @@ function checkOverdueWorkers() {
         let synth;
         
         async function initAudio() {
-            if (synth || Tone.context.state === 'running') return;
+            if (synth || (Tone.context && Tone.context.state === 'running')) return;
             try {
                 await Tone.start();
                 synth = new Tone.Synth().toDestination();
@@ -508,42 +507,41 @@ function checkOverdueWorkers() {
         async function playSoundAndVibrate(action) {
             await initAudio(); // Ensure audio context is running
             
-            // On some mobile devices, audio context needs a moment after Tone.start()
-            if (!synth) {
-                // If synth fails, just vibrate. Re-check in 100ms
-                if ('vibrate' in navigator) {
-                    if (action === 'warning') navigator.vibrate([800, 200, 800]);
-                    else navigator.vibrate(50);
+            const play = () => {
+                if (!synth) return;
+                const now = Tone.now();
+                switch(action) {
+                    case 'arrive':
+                        synth.triggerAttackRelease("C4", "8n", now);
+                        synth.triggerAttackRelease("G4", "8n", now + 0.2);
+                        if ('vibrate' in navigator) navigator.vibrate(50);
+                        break;
+                    case 'depart':
+                        synth.triggerAttackRelease("G4", "8n", now);
+                        synth.triggerAttackRelease("C4", "8n", now + 0.2);
+                        if ('vibrate' in navigator) navigator.vibrate(50);
+                        break;
+                    case 'extend':
+                        synth.triggerAttackRelease("A4", "16n", now);
+                        if ('vibrate' in navigator) navigator.vibrate(50);
+                        break;
+                    case 'safe':
+                        synth.triggerAttackRelease("C5", "8n", now);
+                        if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
+                        break;
+                    case 'warning':
+                        synth.triggerAttackRelease("E5", "16n", now);
+                        synth.triggerAttackRelease("G5", "16n", now + 0.2);
+                        if ('vibrate' in navigator) navigator.vibrate([800, 200, 800]); 
+                        break;
                 }
-                setTimeout(() => { if (!synth) initAudio(); }, 100);
-                return;
-            }
-            
-            const now = Tone.now();
-            switch(action) {
-                case 'arrive':
-                    synth.triggerAttackRelease("C4", "8n", now);
-                    synth.triggerAttackRelease("G4", "8n", now + 0.2);
-                    if ('vibrate' in navigator) navigator.vibrate(50);
-                    break;
-                case 'depart':
-                    synth.triggerAttackRelease("G4", "8n", now);
-                    synth.triggerAttackRelease("C4", "8n", now + 0.2);
-                    if ('vibrate' in navigator) navigator.vibrate(50);
-                    break;
-                case 'extend':
-                    synth.triggerAttackRelease("A4", "16n", now);
-                    if ('vibrate' in navigator) navigator.vibrate(50);
-                    break;
-                case 'safe':
-                    synth.triggerAttackRelease("C5", "8n", now);
-                    if ('vibrate' in navigator) navigator.vibrate([50, 50, 50]);
-                    break;
-                case 'warning':
-                    synth.triggerAttackRelease("E5", "16n", now);
-                    synth.triggerAttackRelease("G5", "16n", now + 0.2);
-                     if ('vibrate' in navigator) navigator.vibrate([800, 200, 800]); 
-                    break;
+            };
+
+            if (synth) {
+                play();
+            } else {
+                // If synth isn't ready, wait a moment and try again
+                setTimeout(play, 100);
             }
         }
 
@@ -1079,63 +1077,20 @@ function checkOverdueWorkers() {
                 updateArrivedButtonState();
             });
 
-            // Custom Long Press Implementation
-            function applyLongPress(element, callback) {
-                let timer;
-                let startX, startY;
-                const moveTolerance = 15; // Pixels allowed to move
+            // Long Press Buttons
+            arrivedBtn.addEventListener('long-press', handleArriveLongPress);
+            document.getElementById('departBtn').addEventListener('long-press', handleDepartLongPress);
+            document.getElementById('extendBtn').addEventListener('long-press', handleExtendLongPress);
+            document.getElementById('iamSafeBtn').addEventListener('long-press', handleSafeLongPress);
 
-                const start = (e) => {
-                    if (element.disabled) return;
-                    
-                    if (e.type === 'touchstart') {
-                        startX = e.touches[0].clientX;
-                        startY = e.touches[0].clientY;
-                    }
-                    
-                    element.classList.add('pressing');
-                    timer = setTimeout(() => {
-                        if (timer) { // Check if timer is still active
-                            callback();
-                        }
-                        // Reset state on successful press or if timer runs out
-                        clearTimeout(timer);
-                        timer = null;
-                        element.classList.remove('pressing');
-                    }, 2000);
-                };
-
-                const cancel = () => {
-                    clearTimeout(timer);
-                    timer = null;
-                    element.classList.remove('pressing');
-                };
-
-                const move = (e) => {
-                    if (e.type === 'touchmove' && timer) {
-                        const deltaX = Math.abs(e.touches[0].clientX - startX);
-                        const deltaY = Math.abs(e.touches[0].clientY - startY);
-
-                        if (deltaX > moveTolerance || deltaY > moveTolerance) {
-                            cancel();
-                        }
-                    }
-                };
-                
-                element.addEventListener('mousedown', start);
-                element.addEventListener('mouseup', cancel);
-                element.addEventListener('mouseleave', cancel);
-                
-                element.addEventListener('touchstart', start, { passive: true });
-                element.addEventListener('touchend', cancel);
-                element.addEventListener('touchcancel', cancel);
-                element.addEventListener('touchmove', move, { passive: false });
-            }
-
-            applyLongPress(arrivedBtn, handleArriveLongPress);
-            applyLongPress(document.getElementById('departBtn'), handleDepartLongPress);
-            applyLongPress(document.getElementById('extendBtn'), handleExtendLongPress);
-            applyLongPress(document.getElementById('iamSafeBtn'), handleSafeLongPress);
+            document.querySelectorAll('.long-press-btn').forEach(btn => {
+                btn.addEventListener('mousedown', () => btn.classList.add('pressing'));
+                btn.addEventListener('mouseup', () => btn.classList.remove('pressing'));
+                btn.addEventListener('mouseleave', () => btn.classList.remove('pressing'));
+                btn.addEventListener('touchstart', () => btn.classList.add('pressing'), { passive: true });
+                btn.addEventListener('touchend', () => btn.classList.remove('pressing'));
+                btn.addEventListener('touchcancel', () => btn.classList.remove('pressing'));
+            });
         }
 
         // --- Initialization ---
@@ -1163,4 +1118,3 @@ function checkOverdueWorkers() {
     </script>
 </body>
 </html>
-
