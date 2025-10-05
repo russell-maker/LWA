@@ -508,7 +508,14 @@ function checkOverdueWorkers() {
             await initAudio(); // Ensure audio context is running
             
             const play = () => {
-                if (!synth) return;
+                if (!synth && Tone.context.state !== 'running') {
+                    console.log("Audio context not ready, retrying...");
+                    setTimeout(play, 100);
+                    return;
+                } else if (!synth) {
+                    synth = new Tone.Synth().toDestination();
+                }
+
                 const now = Tone.now();
                 switch(action) {
                     case 'arrive':
@@ -536,13 +543,8 @@ function checkOverdueWorkers() {
                         break;
                 }
             };
-
-            if (synth) {
-                play();
-            } else {
-                // If synth isn't ready, wait a moment and try again
-                setTimeout(play, 100);
-            }
+            
+            play();
         }
 
 
@@ -1087,7 +1089,11 @@ function checkOverdueWorkers() {
                 btn.addEventListener('mousedown', () => btn.classList.add('pressing'));
                 btn.addEventListener('mouseup', () => btn.classList.remove('pressing'));
                 btn.addEventListener('mouseleave', () => btn.classList.remove('pressing'));
-                btn.addEventListener('touchstart', () => btn.classList.add('pressing'), { passive: true });
+                btn.addEventListener('touchstart', (e) => {
+                     // Prevent the browser from trying to scroll or zoom on the button
+                    e.preventDefault();
+                    btn.classList.add('pressing');
+                }, { passive: false });
                 btn.addEventListener('touchend', () => btn.classList.remove('pressing'));
                 btn.addEventListener('touchcancel', () => btn.classList.remove('pressing'));
             });
@@ -1118,3 +1124,4 @@ function checkOverdueWorkers() {
     </script>
 </body>
 </html>
+
