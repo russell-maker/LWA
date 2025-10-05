@@ -19,6 +19,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/long-press-event/dist/long-press-event.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
@@ -127,7 +128,7 @@
                     </div>
         
                     <!-- Arrived Button -->
-                    <button id="arrivedBtn" disabled class="long-press-btn relative w-full bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 flex-shrink-0">
+                    <button id="arrivedBtn" data-long-press-delay="2000" disabled class="long-press-btn relative w-full bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 flex-shrink-0">
                         Select Location & Duration
                     </button>
                 </div>
@@ -152,16 +153,16 @@
                     <h3 class="text-xl font-bold text-red-300">ALERT ACTIVE</h3>
                     <p class="text-red-400">Automated emails have been sent to your contacts.</p>
                 </div>
-                <button id="iamSafeBtn" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl mb-4">
+                <button id="iamSafeBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl mb-4">
                     I AM SAFE
                 </button>
             </div>
 
             <div id="normalButtonsContainer" class="w-full space-y-4">
-                <button id="extendBtn" class="long-press-btn relative w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
+                <button id="extendBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
                     Extend 10 Mins
                 </button>
-                <button id="departBtn" class="long-press-btn relative w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
+                <button id="departBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg text-xl">
                     DEPART
                 </button>
             </div>
@@ -738,6 +739,7 @@ function checkOverdueWorkers() {
         }
 
         function handleExtendLongPress() {
+            // PIN verification now includes the feedback
             withPinVerification(() => {
                 playSoundAndVibrate('extend');
                 extendVisit();
@@ -1101,6 +1103,16 @@ function checkOverdueWorkers() {
 
         // --- Initialization ---
         function init() {
+             if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').then(registration => {
+                        console.log('SW registered: ', registration);
+                    }).catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+                });
+            }
+
             loadState();
             // Default to main page on load unless there's an active visit
             if (state.activeVisit) {
