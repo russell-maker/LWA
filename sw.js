@@ -1,17 +1,18 @@
-const CACHE_NAME = 'lone-worker-safety-cache-v1';
+const CACHE_NAME = 'lone-worker-safety-cache-v2'; // Updated cache name
 const urlsToCache = [
-  '/',
-  '/index.html',
-  // You can add other important assets here if needed, like your logo URL
+  './',
+  './index.html',
+  './manifest.json', // Added manifest to cache
   'https://i.postimg.cc/dVmVg3Pn/favicon-logo-for-LWSApp.png'
 ];
 
 // Install the service worker and cache the app shell
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Force the waiting service worker to become the active service worker.
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
+        console.log('Opened cache and caching assets');
         return cache.addAll(urlsToCache);
       })
   );
@@ -41,6 +42,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
