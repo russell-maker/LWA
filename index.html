@@ -19,7 +19,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/long-press-event/dist/long-press-event.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
@@ -188,32 +187,45 @@
         <div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">How to Use This App</h2>
             <div class="text-gray-300 space-y-4">
-                <p>This app logs visits to a central Google Sheet. The sheet itself is responsible for sending automated email alerts if a worker is overdue.</p>
-                <div>
-                    <h3 class="font-semibold text-lg text-blue-400">1. Google Sheet Setup</h3>
-                    <p>Your spreadsheet must have these exact headers in the first row:</p>
-                    <p class="bg-gray-950 text-sm p-2 rounded-md mt-2">`Date`, `Location Name`, `Location Address`, `Arrival Time`, `Actual Departure Time`, `Anticipated Departure Time`, `Alarm Status`, `Worker Name`, `Worker Phone Number`, `Emergency Contact Name`, `Emergency Contact Number`, `Emergency Contact Email`, `Escalation Contact Name`, `Escalation Contact Number`, `Escalation Contact Email`, `Last Known GPS`, `GPS Timestamp`, `Notes`</p>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-lg text-blue-400">2. Apps Script Setup</h3>
-                    <ol class="list-decimal list-inside space-y-2 mt-2 pl-4">
-                        <li>In your Sheet, go to `Extensions > Apps Script`.</li>
-                        <li>Delete any existing code and replace it with the latest script provided by your administrator.</li>
-                        <li>Click "Deploy" > "New deployment". Choose "Web app" as the type.</li>
-                        <li>Set "Who has access" to "Anyone".</li>
-                        <li>Click "Deploy", authorize the script, and copy the **Web app URL**.</li>
-                        <li>Paste this URL into this app's Settings page.</li>
-                    </ol>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-lg text-blue-400">3. Activate Email Trigger (Crucial Step)</h3>
-                     <ol class="list-decimal list-inside space-y-2 mt-2 pl-4">
-                        <li>In the Apps Script editor, find the dropdown menu that says "doPost" or "Select function". Click it and choose **"setupTrigger"**.</li>
-                        <li>Click the **"Run"** button next to it.</li>
-                        <li>Authorize the script to run automatically.</li>
-                        <li>That's it! The script will now check for overdue workers every 5 minutes.</li>
-                    </ol>
-                </div>
+                <h3 class="font-semibold text-lg text-blue-400">1. Installation ("Add to Home Screen")</h3>
+                <p>For the best experience, add the app to your phone's home screen. This makes it work like a regular app.</p>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>On iPhone (Safari):</strong> Tap the <strong>Share</strong> icon, scroll down, and select <strong>"Add to Home Screen"</strong>.</li>
+                    <li><strong>On Android (Chrome):</strong> Tap the <strong>three-dot menu</strong> icon and select <strong>"Install app"</strong> or "Add to Home Screen".</li>
+                </ul>
+
+                <h3 class="font-semibold text-lg text-blue-400">2. First-Time Setup (Crucial)</h3>
+                <p>The first time you open the app, you must configure your settings.</p>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li>Tap the <strong>Settings icon</strong> (gear) in the top-right corner.</li>
+                    <li>Fill in all the fields, especially the <strong>Google Sheet URL</strong> provided by your administrator.</li>
+                    <li>Tap <strong>Save Settings</strong>.</li>
+                </ol>
+
+                <h3 class="font-semibold text-lg text-blue-400">3. Using the App for a Visit</h3>
+                 <ol class="list-decimal list-inside space-y-1">
+                    <li><strong>Select a Location:</strong> Tap a location from the list.</li>
+                    <li><strong>Set Duration:</strong> Use the slider to set how long you expect to be at the location.</li>
+                    <li><strong>Start Your Visit:</strong> Press and hold the green <strong>"ON SITE"</strong> button for 2 seconds. The screen will lock, and your countdown timer will begin.</li>
+                </ol>
+
+                 <h3 class="font-semibold text-lg text-blue-400">4. While On-Site</h3>
+                 <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Extend Time:</strong> Press and hold the <strong>"Extend 10 Mins"</strong> button and enter your PIN.</li>
+                    <li><strong>Depart Safely:</strong> When you are finished, press and hold the <strong>"DEPART"</strong> button.</li>
+                    <li><strong>Panic Alert (SOS):</strong> In an emergency, **triple-tap the red "SOS" button** to send an immediate alert.</li>
+                </ul>
+                
+                 <h3 class="font-semibold text-lg text-blue-400">5. Alerts</h3>
+                 <ul class="list-disc list-inside space-y-2">
+                    <li>The app will vibrate and chime 2 minutes before your time is up.</li>
+                    <li>If you go overdue, the system will automatically email your emergency contact.</li>
+                    <li>If an alert is sent, press and hold the <strong>"I AM SAFE"</strong> button (and enter PIN) to cancel.</li>
+                </ul>
+
+                <h3 class="font-semibold text-lg text-blue-400 mt-4">Privacy Note</h3>
+                <p>Please be aware that by using this app, your personal details (name, phone number), emergency contact information, and your GPS location data (when a session is active or an alert is triggered) are shared with your designated safety monitor and recorded in a central spreadsheet. This data is retained for safety and record-keeping purposes and will be periodically deleted by the system administrator.</p>
+
             </div>
             <div class="mt-6 flex justify-end">
                 <button id="closeInfoModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
@@ -305,7 +317,6 @@
             addLocationBtn.addEventListener('click', () => { showModal('location', () => { document.getElementById('locationModalTitle').textContent = 'Add New Location'; document.getElementById('locationName').value = ''; document.getElementById('locationAddress').value = ''; document.getElementById('deleteLocationBtn').classList.add('hidden'); document.querySelector('#saveLocationBtn').dataset.id = ''; }); });
             locationList.addEventListener('click', e => { 
                 const editBtn = e.target.closest('.edit-location-btn'); 
-                const item = e.target.closest('.selectable-item');
                 if (editBtn) { 
                     e.stopPropagation(); 
                     const locId = editBtn.dataset.id; 
@@ -318,17 +329,20 @@
                         document.querySelector('#saveLocationBtn').dataset.id = locId; 
                         document.querySelector('#deleteLocationBtn').dataset.id = locId; 
                     }); 
-                } else if (item) {
-                    const locId = item.querySelector('.edit-location-btn').dataset.id;
-                    state.selectedLocationId = locId; 
-                    if('vibrate' in navigator) navigator.vibrate(20);
-                    renderLocations(); 
-                    updateArrivedButtonState(); 
+                } else {
+                    const item = e.target.closest('.selectable-item');
+                    if (item) {
+                        const locId = item.querySelector('.edit-location-btn').dataset.id;
+                        state.selectedLocationId = locId; 
+                        if('vibrate' in navigator) navigator.vibrate(20);
+                        renderLocations(); 
+                        updateArrivedButtonState();
+                    }
                 }
             });
             cancelLocationBtn.addEventListener('click', hideModals);
             saveLocationBtn.addEventListener('click', () => { const id = document.querySelector('#saveLocationBtn').dataset.id; const name = document.getElementById('locationName').value.trim(); const address = document.getElementById('locationAddress').value.trim(); if (!name || !address) { showAlert("Missing Info", "Please provide both a name and an address for the location."); return; } if (id) { const index = state.locations.findIndex(l => l.id === id); state.locations[index] = { ...state.locations[index], name, address }; } else { state.locations.push({ id: `loc_${Date.now()}`, name, address }); } saveState(); renderLocations(); hideModals(); });
-            deleteLocationBtn.addEventListener('click', (e) => { const id = e.target.dataset.id; state.locations = state.locations.filter(l => l.id !== id); if (state.selectedLocationId === id) { state.selectedLocationId = null; } saveState(); renderLocations(); hideModals(); });
+            deleteLocationBtn.addEventListener('click', (e) => { const id = e.target.dataset.id; if (id === 'loc_travelling_default') { showAlert('Cannot Delete', 'The "Travelling" location cannot be deleted.'); return; } state.locations = state.locations.filter(l => l.id !== id); if (state.selectedLocationId === id) { state.selectedLocationId = null; } saveState(); renderLocations(); hideModals(); });
             useCurrentLocationBtn.addEventListener('click', () => { if (!navigator.geolocation) { showAlert("Not Supported", "Geolocation is not supported by your browser."); return; } navigator.geolocation.getCurrentPosition( (position) => { const { latitude, longitude } = position.coords; fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`).then(res => res.json()).then(data => { document.getElementById('locationAddress').value = data.display_name || `${latitude}, ${longitude}`; }).catch(() => { showAlert("Error", "Could not fetch address. Using coordinates instead."); document.getElementById('locationAddress').value = `${latitude}, ${longitude}`; }); }, () => showAlert("Error", "Unable to retrieve your location.") ); });
             durationSlider.addEventListener('input', (e) => { state.visitDurationMinutes = DURATION_STEPS[parseInt(e.target.value)]; durationDisplay.textContent = formatDuration(state.visitDurationMinutes); updateArrivedButtonState(); });
             let tapCount = 0; let tapTimer = null; panicBtn.addEventListener('click', () => { tapCount++; if (tapCount === 1) { tapTimer = setTimeout(() => { tapCount = 0; }, 1500); } if (tapCount === 3) { clearTimeout(tapTimer); tapCount = 0; triggerPanicAlert(); } });
@@ -379,3 +393,4 @@
     </script>
 </body>
 </html>
+
