@@ -84,7 +84,7 @@
         .animate-fadeIn {
             animation: fadeIn 0.3s ease-in-out;
         }
-        header button svg {
+        header button svg, .edit-location-btn svg {
             pointer-events: none;
         }
     </style>
@@ -530,7 +530,13 @@ function checkOverdueWorkers() {
                 btn.addEventListener('touchcancel', () => btn.classList.remove('pressing'));
             });
             let pressTimer;
-            locationList.addEventListener('touchstart', e => { const item = e.target.closest('.selectable-item'); if (!item) return; item.classList.add('pressing'); pressTimer = setTimeout(() => { const locId = item.querySelector('.edit-location-btn').dataset.id; state.selectedLocationId = locId; renderLocations(); updateArrivedButtonState(); if('vibrate' in navigator) navigator.vibrate(20); }, 300); }, { passive: false });
+            locationList.addEventListener('touchstart', e => {
+                if (e.target.closest('.edit-location-btn')) return;
+                const item = e.target.closest('.selectable-item'); 
+                if (!item) return; 
+                item.classList.add('pressing'); 
+                pressTimer = setTimeout(() => { const locId = item.querySelector('.edit-location-btn').dataset.id; state.selectedLocationId = locId; renderLocations(); updateArrivedButtonState(); if('vibrate' in navigator) navigator.vibrate(20); }, 300); 
+            }, { passive: false });
             locationList.addEventListener('touchend', e => { clearTimeout(pressTimer); const item = e.target.closest('.selectable-item'); if (item) item.classList.remove('pressing'); });
             locationList.addEventListener('touchcancel', e => { clearTimeout(pressTimer); const item = e.target.closest('.selectable-item'); if (item) item.classList.remove('pressing'); });
         }
