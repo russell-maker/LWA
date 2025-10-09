@@ -19,6 +19,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/long-press-event/dist/long-press-event.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
@@ -37,10 +38,6 @@
             -ms-user-select: none; /* IE 10+ */
             user-select: none; /* Standard syntax */
             -webkit-touch-callout: none; /* iOS Safari */
-        }
-        .selectable-item.pressing {
-            transform: scale(0.98);
-            background-color: rgba(75, 85, 99, 0.5); /* gray-600 with opacity */
         }
         .long-press-btn::after {
             content: '';
@@ -105,7 +102,7 @@
             <div class="flex-1 overflow-y-auto min-h-0 -mx-4 px-4">
                 <div class="flex flex-col h-full">
                     <div class="bg-gray-900 rounded-lg p-4 mb-4 flex-grow flex flex-col">
-                        <h2 class="text-lg font-semibold mb-2 text-gray-300">Select Location (Hold to Select)</h2>
+                        <h2 class="text-lg font-semibold mb-2 text-gray-300">Select Location</h2>
                         <div id="locationList" class="space-y-2 flex-grow overflow-y-auto"></div>
                         <button id="addLocationBtn" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><line x1="12" y1="5" y2="19"></line><line x1="5" y1="12" y2="19"></line></svg>Add New Location</button>
                     </div>
@@ -116,7 +113,7 @@
                         </div>
                         <input id="durationSlider" type="range" min="0" max="15" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
-                    <button id="arrivedBtn" disabled class="long-press-btn relative w-full bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 flex-shrink-0">Select Location & Duration</button>
+                    <button id="arrivedBtn" data-long-press-delay="2000" disabled class="long-press-btn relative w-full bg-gray-700 text-gray-400 font-bold py-4 px-4 rounded-lg text-xl transition-colors duration-300 flex-shrink-0">Select Location & Duration</button>
                 </div>
             </div>
         </div>
@@ -139,11 +136,11 @@
                     <h3 class="text-xl font-bold text-red-300">ALERT ACTIVE</h3>
                     <p class="text-red-400">Automated emails have been sent to your contacts.</p>
                 </div>
-                <button id="iamSafeBtn" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I AM SAFE</button>
+                <button id="iamSafeBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg text-xl">I AM SAFE</button>
             </div>
             <div id="normalButtonsContainer" class="w-full space-y-4 mb-4">
-                <button id="extendBtn" class="long-press-btn relative w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-xl">Extend 10 Mins</button>
-                <button id="departBtn" class="long-press-btn relative w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg text-xl">DEPART</button>
+                <button id="extendBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg text-xl">Extend 10 Mins</button>
+                <button id="departBtn" data-long-press-delay="2000" class="long-press-btn relative w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-lg text-xl">DEPART</button>
             </div>
         </div>
 
@@ -471,8 +468,19 @@ function checkOverdueWorkers() {
             play();
         }
         function navigate(page) { Object.values(pages).forEach(p => { p.classList.remove('active'); p.classList.add('hidden'); }); if (pages[page]) { pages[page].classList.remove('hidden'); pages[page].classList.add('active'); } }
-        function showModal(modalKey, onShow) { modals.backdrop.classList.remove('hidden'); modals.backdrop.classList.add('flex'); Object.values(modals).forEach(m => { if(m !== modals.backdrop) m.classList.add('hidden'); }); if(modals[modalKey]) { modals[modalKey].classList.remove('hidden'); if(onShow) onShow(); } }
-        function hideModals() { modals.backdrop.classList.add('hidden'); modals.backdrop.classList.remove('flex'); Object.values(modals).forEach(m => { if(m !== modals.backdrop) m.classList.add('hidden'); }); }
+        function showModal(modalKey, onShow) {
+            const modal = modals[modalKey];
+            modals.backdrop.classList.remove('hidden');
+            modals.backdrop.classList.add('flex');
+            Object.values(modals).forEach(m => {
+                if (m !== modals.backdrop) m.classList.add('hidden');
+            });
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (onShow) onShow();
+            }
+        }
+        function hideModals() { modals.backdrop.classList.add('hidden'); modals.backdrop.classList.remove('flex'); }
         function showAlert(title, message) { document.getElementById('alertModalTitle').textContent = title; document.getElementById('alertModalMessage').textContent = message; showModal('alert'); }
         function loadState() { const savedState = JSON.parse(localStorage.getItem('loneWorkerState')); if (savedState) { const mergedSettings = { ...state.settings, ...savedState.settings }; state = { ...state, ...savedState, settings: mergedSettings }; if (state.activeVisit) { state.activeVisit.startTime = new Date(state.activeVisit.startTime); state.activeVisit.anticipatedDepartureTime = new Date(state.activeVisit.anticipatedDepartureTime); } } const travellingExists = state.locations.some(loc => loc.name === 'Travelling'); if (!travellingExists) { state.locations.push({ id: 'loc_travelling_default', name: 'Travelling', address: 'GPS updates will be sent every 15 minutes.' }); saveState(); } }
         function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
@@ -505,10 +513,29 @@ function checkOverdueWorkers() {
             closeInfoModalBtn.addEventListener('click', hideModals);
             alertModalOkBtn.addEventListener('click', hideModals);
             saveSettingsBtn.addEventListener('click', () => { Object.keys(state.settings).forEach(key => { const input = document.getElementById(key); if (input) state.settings[key] = input.value; }); saveState(); showAlert("Success", "Settings have been saved."); navigate('main'); });
-            addLocationBtn.addEventListener('click', () => { document.getElementById('locationModalTitle').textContent = 'Add New Location'; document.getElementById('locationName').value = ''; document.getElementById('locationAddress').value = ''; document.getElementById('deleteLocationBtn').classList.add('hidden'); document.querySelector('#saveLocationBtn').dataset.id = ''; showModal('location'); });
+            addLocationBtn.addEventListener('click', () => { showModal('location', () => { document.getElementById('locationModalTitle').textContent = 'Add New Location'; document.getElementById('locationName').value = ''; document.getElementById('locationAddress').value = ''; document.getElementById('deleteLocationBtn').classList.add('hidden'); document.querySelector('#saveLocationBtn').dataset.id = ''; }); });
             locationList.addEventListener('click', e => { 
                 const editBtn = e.target.closest('.edit-location-btn'); 
-                if (editBtn) { e.stopPropagation(); const locId = editBtn.dataset.id; const location = state.locations.find(l => l.id === locId); document.getElementById('locationModalTitle').textContent = 'Edit Location'; document.getElementById('locationName').value = location.name; document.getElementById('locationAddress').value = location.address; document.getElementById('deleteLocationBtn').classList.remove('hidden'); document.querySelector('#saveLocationBtn').dataset.id = locId; document.querySelector('#deleteLocationBtn').dataset.id = locId; showModal('location'); }
+                const item = e.target.closest('.selectable-item');
+                if (editBtn) { 
+                    e.stopPropagation(); 
+                    const locId = editBtn.dataset.id; 
+                    const location = state.locations.find(l => l.id === locId); 
+                    showModal('location', () => { 
+                        document.getElementById('locationModalTitle').textContent = 'Edit Location'; 
+                        document.getElementById('locationName').value = location.name; 
+                        document.getElementById('locationAddress').value = location.address; 
+                        document.getElementById('deleteLocationBtn').classList.remove('hidden'); 
+                        document.querySelector('#saveLocationBtn').dataset.id = locId; 
+                        document.querySelector('#deleteLocationBtn').dataset.id = locId; 
+                    }); 
+                } else if (item) {
+                    const locId = item.querySelector('.edit-location-btn').dataset.id;
+                    state.selectedLocationId = locId; 
+                    if('vibrate' in navigator) navigator.vibrate(20);
+                    renderLocations(); 
+                    updateArrivedButtonState(); 
+                }
             });
             cancelLocationBtn.addEventListener('click', hideModals);
             saveLocationBtn.addEventListener('click', () => { const id = document.querySelector('#saveLocationBtn').dataset.id; const name = document.getElementById('locationName').value.trim(); const address = document.getElementById('locationAddress').value.trim(); if (!name || !address) { showAlert("Missing Info", "Please provide both a name and an address for the location."); return; } if (id) { const index = state.locations.findIndex(l => l.id === id); state.locations[index] = { ...state.locations[index], name, address }; } else { state.locations.push({ id: `loc_${Date.now()}`, name, address }); } saveState(); renderLocations(); hideModals(); });
@@ -528,16 +555,6 @@ function checkOverdueWorkers() {
                 btn.addEventListener('touchend', () => btn.classList.remove('pressing'));
                 btn.addEventListener('touchcancel', () => btn.classList.remove('pressing'));
             });
-            let pressTimer;
-            locationList.addEventListener('touchstart', e => {
-                if (e.target.closest('.edit-location-btn')) return;
-                const item = e.target.closest('.selectable-item'); 
-                if (!item) return; 
-                item.classList.add('pressing'); 
-                pressTimer = setTimeout(() => { const locId = item.querySelector('.edit-location-btn').dataset.id; state.selectedLocationId = locId; renderLocations(); updateArrivedButtonState(); if('vibrate' in navigator) navigator.vibrate(20); }, 300); 
-            }, { passive: false });
-            locationList.addEventListener('touchend', e => { clearTimeout(pressTimer); const item = e.target.closest('.selectable-item'); if (item) item.classList.remove('pressing'); });
-            locationList.addEventListener('touchcancel', e => { clearTimeout(pressTimer); const item = e.target.closest('.selectable-item'); if (item) item.classList.remove('pressing'); });
         }
         
         function init() {
