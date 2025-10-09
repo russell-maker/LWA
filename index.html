@@ -19,6 +19,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/long-press-event/dist/long-press-event.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
@@ -187,7 +188,7 @@
         <div id="infoModal" class="hidden bg-gray-800 rounded-lg shadow-xl w-full max-w-lg p-6 animate-fadeIn max-h-[90vh] overflow-y-auto">
             <h2 class="text-xl font-bold mb-4">How to Use This App</h2>
             <div class="text-gray-300 space-y-4">
-                <h3 class="font-semibold text-lg text-blue-400">1. Installation ("Add to Home Screen")</h3>
+                 <h3 class="font-semibold text-lg text-blue-400">1. Installation ("Add to Home Screen")</h3>
                 <p>For the best experience, add the app to your phone's home screen. This makes it work like a regular app.</p>
                 <ul class="list-disc list-inside space-y-2">
                     <li><strong>On iPhone (Safari):</strong> Tap the <strong>Share</strong> icon, scroll down, and select <strong>"Add to Home Screen"</strong>.</li>
@@ -225,7 +226,6 @@
 
                 <h3 class="font-semibold text-lg text-blue-400 mt-4">Privacy Note</h3>
                 <p>Please be aware that by using this app, your personal details (name, phone number), emergency contact information, and your GPS location data (when a session is active or an alert is triggered) are shared with your designated safety monitor and recorded in a central spreadsheet. This data is retained for safety and record-keeping purposes and will be periodically deleted by the system administrator.</p>
-
             </div>
             <div class="mt-6 flex justify-end">
                 <button id="closeInfoModalBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Close</button>
@@ -317,6 +317,7 @@
             addLocationBtn.addEventListener('click', () => { showModal('location', () => { document.getElementById('locationModalTitle').textContent = 'Add New Location'; document.getElementById('locationName').value = ''; document.getElementById('locationAddress').value = ''; document.getElementById('deleteLocationBtn').classList.add('hidden'); document.querySelector('#saveLocationBtn').dataset.id = ''; }); });
             locationList.addEventListener('click', e => { 
                 const editBtn = e.target.closest('.edit-location-btn'); 
+                const item = e.target.closest('.selectable-item');
                 if (editBtn) { 
                     e.stopPropagation(); 
                     const locId = editBtn.dataset.id; 
@@ -329,15 +330,12 @@
                         document.querySelector('#saveLocationBtn').dataset.id = locId; 
                         document.querySelector('#deleteLocationBtn').dataset.id = locId; 
                     }); 
-                } else {
-                    const item = e.target.closest('.selectable-item');
-                    if (item) {
-                        const locId = item.querySelector('.edit-location-btn').dataset.id;
-                        state.selectedLocationId = locId; 
-                        if('vibrate' in navigator) navigator.vibrate(20);
-                        renderLocations(); 
-                        updateArrivedButtonState();
-                    }
+                } else if (item) {
+                    const locId = item.querySelector('.edit-location-btn').dataset.id;
+                    state.selectedLocationId = locId; 
+                    if('vibrate' in navigator) navigator.vibrate(20);
+                    renderLocations(); 
+                    updateArrivedButtonState();
                 }
             });
             cancelLocationBtn.addEventListener('click', hideModals);
@@ -393,4 +391,3 @@
     </script>
 </body>
 </html>
-
