@@ -39,6 +39,10 @@
             user-select: none; /* Standard syntax */
             -webkit-touch-callout: none; /* iOS Safari */
         }
+        .selectable-item.pressing {
+            transform: scale(0.98);
+            background-color: rgba(75, 85, 99, 0.5); /* gray-600 with opacity */
+        }
         .long-press-btn::after {
             content: '';
             position: absolute;
@@ -194,11 +198,9 @@
                     <h3 class="font-semibold text-lg text-blue-400">2. Apps Script Setup</h3>
                     <ol class="list-decimal list-inside space-y-2 mt-2 pl-4">
                         <li>In your Sheet, go to `Extensions > Apps Script`.</li>
-                        <li>**Delete all existing code** in the editor.</li>
-                        <li>Copy the new, complete script below and paste it into the editor.</li>
-                        <li>Click the "Save project" icon.</li>
+                        <li>Delete any existing code and replace it with the latest script provided by your administrator.</li>
                         <li>Click "Deploy" > "New deployment". Choose "Web app" as the type.</li>
-                        <li>Set "Who has access" to "Anyone". This is required.</li>
+                        <li>Set "Who has access" to "Anyone".</li>
                         <li>Click "Deploy", authorize the script, and copy the **Web app URL**.</li>
                         <li>Paste this URL into this app's Settings page.</li>
                     </ol>
@@ -206,224 +208,11 @@
                 <div>
                     <h3 class="font-semibold text-lg text-blue-400">3. Activate Email Trigger (Crucial Step)</h3>
                      <ol class="list-decimal list-inside space-y-2 mt-2 pl-4">
-                        <li>Go back to the Apps Script editor.</li>
-                        <li>Near the top of the editor, find the dropdown menu that says "doPost" or "Select function". Click it and choose **"setupTrigger"**.</li>
+                        <li>In the Apps Script editor, find the dropdown menu that says "doPost" or "Select function". Click it and choose **"setupTrigger"**.</li>
                         <li>Click the **"Run"** button next to it.</li>
-                        <li>A dialog will ask for authorization again. This is to allow the script to run automatically. Complete the authorization steps.</li>
+                        <li>Authorize the script to run automatically.</li>
                         <li>That's it! The script will now check for overdue workers every 5 minutes.</li>
                     </ol>
-                </div>
-                <div class="mt-4">
-                    <h3 class="font-semibold text-lg text-blue-400">Google Apps Script Code:</h3>
-                    <pre class="bg-gray-950 text-sm text-yellow-300 p-3 rounded-md overflow-x-auto"><code>// This function handles GET requests (from the monitor app) to READ data
-function doGet(e) {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-    const dataRange = sheet.getDataRange();
-    const values = dataRange.getValues();
-
-    if (values.length <= 1) { // Check if sheet is empty or only has headers
-        const emptyJsonp = e.parameter.callback + '([])';
-        return ContentService.createTextOutput(emptyJsonp).setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-    
-    const headers = values.shift(); // Get headers
-    
-    const jsonData = values.map(row => {
-      let obj = {};
-      headers.forEach((header, index) => {
-        obj[header] = row[index];
-      });
-      return obj;
-    });
-
-    const callback = e.parameter.callback;
-    if (callback) {
-      const jsonp = `${callback}(${JSON.stringify(jsonData)})`;
-      return ContentService.createTextOutput(jsonp).setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-
-    return ContentService.createTextOutput(JSON.stringify(jsonData))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-     Logger.log(`doGet Error: ${error.toString()}`);
-     const errorObj = { "status": "error", "message": error.toString() };
-     const callback = e.parameter.callback;
-     if (callback) {
-         const errorJsonp = `${callback}(${JSON.stringify(errorObj)})`;
-         return ContentService.createTextOutput(errorJsonp).setMimeType(ContentService.MimeType.JAVASCRIPT);
-     }
-     return ContentService.createTextOutput(JSON.stringify(errorObj))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// This function handles POST requests (from worker app AND monitor app) to WRITE data
-function doPost(e) {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-    const data = JSON.parse(e.postData.contents);
-    
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) { 
-       appendNewRow(sheet, data);
-       return ContentService.createTextOutput(JSON.stringify({ "status": "success", "action": "appended" })).setMimeType(ContentService.MimeType.JSON);
-    }
-    const arrivalTimes = sheet.getRange(2, 4, lastRow - 1, 1).getValues();
-    const workerNames = sheet.getRange(2, 8, lastRow - 1, 1).getValues();
-    
-    let rowToUpdate = -1;
-    for (let i = arrivalTimes.length - 1; i >= 0; i--) {
-      // Robustly compare time values instead of strings
-      const sheetTime = new Date(arrivalTimes[i][0]).getTime();
-      const dataTime = new Date(data['Arrival Time']).getTime();
-      if (sheetTime === dataTime && workerNames[i][0] == data['Worker Name']) {
-        rowToUpdate = i + 2;
-        break;
-      }
-    }
-
-    if (rowToUpdate !== -1) {
-      updateExistingRow(sheet, rowToUpdate, data);
-    } else {
-      appendNewRow(sheet, data);
-    }
-    return ContentService.createTextOutput(JSON.stringify({ "status": "success" })).setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    Logger.log(error);
-    return ContentService.createTextOutput(JSON.stringify({ "status": "error", "message": error.toString() })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function appendNewRow(sheet, data) {
-    sheet.appendRow([
-        data.Date, data['Location Name'], data['Location Address'], new Date(data['Arrival Time']), "", new Date(data['Anticipated Departure Time']),
-        data['Alarm Status'], data['Worker Name'], data['Worker Phone Number'], data['Emergency Contact Name'], data['Emergency Contact Number'],
-        data['Emergency Contact Email'], data['Escalation Contact Name'], data['Escalation Contact Number'], data['Escalation Contact Email'], 
-        "", "", ""
-      ]);
-}
-
-function updateExistingRow(sheet, rowNumber, data) {
-      const range = sheet.getRange(rowNumber, 1, 1, 18);
-      const currentValues = range.getValues()[0];
-      
-      const isClearingAlert = (data['Alarm Status'] === 'DEPARTED' || data['Alarm Status'] === 'SAFE - MANUALLY CLEARED');
-      const wasInAlert = ["ALERT SENT", "EMAIL_1_SENT", "EMAIL_2_SENT", "EMAIL_3_SENT", "ESCALATION_SENT", "EMERGENCY - PANIC BUTTON"].includes(currentValues[6]);
-
-      if (isClearingAlert && wasInAlert) {
-          const workerName = currentValues[7];
-          const locationName = currentValues[1];
-          const departureTime = new Date(data['Actual Departure Time']).toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' });
-          const recipient = currentValues[11]; // Emergency Contact Email
-          if (recipient) {
-              const subject = `ALL CLEAR: Lone Worker ${workerName} is Safe`;
-              const body = `This is an automated message to confirm that worker ${workerName} has now safely departed from "${locationName}" at ${departureTime}.\n\nNo further action is required.`;
-              MailApp.sendEmail(recipient, subject, body);
-          }
-      }
-
-      if (data['Alarm Status'] === 'EMERGENCY - PANIC BUTTON') {
-        const workerName = currentValues[7];
-        const locationName = currentValues[1];
-        const recipient = currentValues[11]; // Emergency Contact Email
-        let locationInfo;
-        if (data['Last Known GPS'] && data['GPS Timestamp']) {
-             locationInfo = `Last known GPS location (at ${new Date(data['GPS Timestamp']).toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}): https://www.google.com/maps?q=${data['Last Known GPS']}`;
-        } else {
-             locationInfo = `Location at arrival: https://www.google.com/maps?q=${encodeURIComponent(currentValues[2])}`;
-        }
-        
-        if (recipient) {
-            const subject = `URGENT PANIC ALERT: Lone Worker ${workerName}`;
-            const body = `THIS IS AN IMMEDIATE PANIC ALERT TRIGGERED BY THE WORKER.\n\nWorker: ${workerName}\nLocation: "${locationName}"\n\nPlease attempt to contact them immediately on ${currentValues[8]}.\n\n${locationInfo}`;
-            MailApp.sendEmail(recipient, subject, body);
-        }
-      }
-
-      const newValues = [
-        data.Date || currentValues[0], data['Location Name'] || currentValues[1], data['Location Address'] || currentValues[2],
-        currentValues[3], // Keep original arrival time
-        data['Actual Departure Time'] ? new Date(data['Actual Departure Time']) : currentValues[4],
-        data['Anticipated Departure Time'] ? new Date(data['Anticipated Departure Time']) : currentValues[5],
-        data['Alarm Status'] || currentValues[6], data['Worker Name'] || currentValues[7], data['Worker Phone Number'] || currentValues[8],
-        data['Emergency Contact Name'] || currentValues[9], data['Emergency Contact Number'] || currentValues[10], data['Emergency Contact Email'] || currentValues[11],
-        data['Escalation Contact Name'] || currentValues[12], data['Escalation Contact Number'] || currentValues[13], data['Escalation Contact Email'] || currentValues[14],
-        data['Last Known GPS'] || currentValues[15], data['GPS Timestamp'] ? new Date(data['GPS Timestamp']) : currentValues[16],
-        data.Notes ? (currentValues[17] ? currentValues[17] + '; ' + data.Notes : data.Notes) : currentValues[17]
-      ];
-      range.setValues([newValues]);
-}
-
-
-function setupTrigger() {
-  ScriptApp.getProjectTriggers().forEach(trigger => ScriptApp.deleteTrigger(trigger));
-  ScriptApp.newTrigger('checkOverdueWorkers')
-      .timeBased()
-      .everyMinutes(5)
-      .create();
-  SpreadsheetApp.getUi().alert('Trigger created successfully! The sheet will now check for overdue workers every 5 minutes.');
-}
-
-function checkOverdueWorkers() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  const dataRange = sheet.getDataRange();
-  const values = dataRange.getValues();
-  const now = new Date();
-
-  for (let i = 1; i < values.length; i++) {
-    const row = values[i];
-    const status = row[6]; 
-    
-    const activeStatuses = ["ON SITE", "ALERT SENT", "EMAIL_1_SENT", "EMAIL_2_SENT", "EMAIL_3_SENT"];
-    if (activeStatuses.includes(status)) {
-      const anticipatedDepartureTime = new Date(row[5]);
-      const overdueMinutes = (now.getTime() - anticipatedDepartureTime.getTime()) / 60000;
-      
-      const workerName = row[7];
-      const locationName = row[1];
-      const locationAddress = row[2];
-      const workerPhone = row[8];
-      const lastKnownGPS = row[15];
-      const gpsTimestamp = row[16] ? new Date(row[16]) : null;
-
-      let locationInfo;
-      if (lastKnownGPS && gpsTimestamp) {
-          locationInfo = `Last known GPS location (at ${gpsTimestamp.toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}): https://www.google.com/maps?q=${lastKnownGPS}`;
-      } else {
-          locationInfo = `Location at arrival: https://www.google.com/maps?q=${encodeURIComponent(locationAddress)}`;
-      }
-
-      const emailBody = `Worker: ${workerName} is visiting "${locationName}" and is now overdue.\nExpected departure was: ${anticipatedDepartureTime.toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' })}\nPlease call ${workerName} on ${workerPhone} to check their status.\n${locationInfo}`;
-      
-      let recipient, subject, newStatus;
-
-      if (overdueMinutes >= 60 && status === "EMAIL_3_SENT") {
-        recipient = row[14];
-        subject = `ESCALATION: Lone Worker ${workerName} is 60+ minutes overdue`;
-        newStatus = "ESCALATION_SENT";
-      } else if (overdueMinutes >= 45 && status === "EMAIL_2_SENT") {
-        recipient = row[11];
-        subject = `FINAL NOTICE: Lone Worker ${workerName} is 45+ minutes overdue`;
-        newStatus = "EMAIL_3_SENT";
-      } else if (overdueMinutes >= 30 && status === "EMAIL_1_SENT") {
-        recipient = row[11];
-        subject = `ALERT: Lone Worker ${workerName} is 30+ minutes overdue`;
-        newStatus = "EMAIL_2_SENT";
-      } else if (overdueMinutes >= 15 && (status === "ON SITE" || status === "ALERT SENT")) {
-        recipient = row[11];
-        subject = `ALERT: Lone Worker ${workerName} is 15+ minutes overdue`;
-        newStatus = "EMAIL_1_SENT";
-      }
-      
-      if (recipient && newStatus) {
-        MailApp.sendEmail(recipient, subject, emailBody);
-        sheet.getRange(i + 1, 7).setValue(newStatus);
-      }
-    }
-  }
-}
-</code></pre>
                 </div>
             </div>
             <div class="mt-6 flex justify-end">
@@ -590,4 +379,3 @@ function checkOverdueWorkers() {
     </script>
 </body>
 </html>
-
