@@ -51,7 +51,7 @@
             height: 100%;
             background-color: rgba(255, 255, 255, 0.3);
             border-radius: 0.5rem;
-            transition: width 2s linear;
+            transition: width 1.5s linear;
         }
         .long-press-btn.pressing::after {
             width: 100%;
@@ -206,7 +206,7 @@
                  <ol class="list-decimal list-inside space-y-1">
                     <li><strong>Select a Location:</strong> Tap a location from the list.</li>
                     <li><strong>Set Duration:</strong> Use the slider to set how long you expect to be at the location.</li>
-                    <li><strong>Start Your Visit:</strong> Press and hold the green <strong>"ON SITE"</strong> button for 2 seconds. The screen will lock, and your countdown timer will begin.</li>
+                    <li><strong>Start Your Visit:</strong> Press and hold the green <strong>"ON SITE"</strong> button for 1.5 seconds. The screen will lock, and your countdown timer will begin.</li>
                 </ol>
 
                  <h3 class="font-semibold text-lg text-blue-400">4. While On-Site</h3>
@@ -287,7 +287,7 @@
         function saveState() { localStorage.setItem('loneWorkerState', JSON.stringify(state)); }
         function renderLocations() { locationList.innerHTML = ''; if (state.locations.length === 0) { locationList.innerHTML = `<p class="text-gray-500 text-center">No locations added yet.</p>`; } state.locations.sort((a,b) => a.name.localeCompare(b.name)).forEach(loc => { const isSelected = loc.id === state.selectedLocationId; const locationEl = document.createElement('div'); locationEl.className = `selectable-item p-3 rounded-lg cursor-pointer border-2 transition-transform duration-100 ${isSelected ? 'bg-blue-900/50 border-blue-500' : 'bg-gray-800 border-transparent hover:border-gray-600'}`; locationEl.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-semibold">${loc.name}</p><p class="text-sm text-gray-400">${loc.address}</p></div><button class="edit-location-btn p-2 rounded-full hover:bg-gray-700" data-id="${loc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button></div>`; locationList.appendChild(locationEl); }); }
         function formatDuration(minutes) { if (minutes < 60) return `${minutes} mins`; const hours = Math.floor(minutes / 60); const mins = minutes % 60; return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`; }
-        function updateArrivedButtonState() { if (state.selectedLocationId && state.visitDurationMinutes > 0) { arrivedBtn.disabled = false; arrivedBtn.classList.remove('bg-gray-700', 'text-gray-400'); arrivedBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white'); arrivedBtn.textContent = 'ON SITE (Hold 2s)'; } else { arrivedBtn.disabled = true; arrivedBtn.classList.add('bg-gray-700', 'text-gray-400'); arrivedBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white'); if (!state.selectedLocationId) { arrivedBtn.textContent = 'Select Location'; } else { arrivedBtn.textContent = 'Set Duration'; } } }
+        function updateArrivedButtonState() { if (state.selectedLocationId && state.visitDurationMinutes > 0) { arrivedBtn.disabled = false; arrivedBtn.classList.remove('bg-gray-700', 'text-gray-400'); arrivedBtn.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white'); arrivedBtn.textContent = 'ON SITE (Hold 1.5s)'; } else { arrivedBtn.disabled = true; arrivedBtn.classList.add('bg-gray-700', 'text-gray-400'); arrivedBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'text-white'); if (!state.selectedLocationId) { arrivedBtn.textContent = 'Select Location'; } else { arrivedBtn.textContent = 'Set Duration'; } } }
         async function sendToGoogleSheet(data) { if (!state.settings.googleSheetUrl) { console.error("Google Sheet URL is not set."); showAlert("Error", "Google Sheet URL is not configured in settings. Data was not saved."); return; } const payload = { ...data, "Worker Name": state.settings.workerName, "Worker Phone Number": state.settings.workerPhone, "Emergency Contact Name": state.settings.emergencyName, "Emergency Contact Number": state.settings.emergencyPhone, "Emergency Contact Email": state.settings.emergencyEmail, "Escalation Contact Name": state.settings.escalationName, "Escalation Contact Number": state.settings.escalationPhone, "Escalation Contact Email": state.settings.escalationEmail, }; try { await fetch(state.settings.googleSheetUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), }); console.log('Data sent to Google Sheet.'); } catch (error) { console.error('Error sending data to Google Sheet:', error); showAlert("Network Error", "Failed to send data to Google Sheet. Please check your connection."); } }
         function withPinVerification(callback) { if (!state.settings.pinCode) { showAlert("PIN Not Set", "Please set a 4-digit PIN in settings for secure actions."); return; } showModal('pin'); const confirmHandler = () => { const pinInput = document.getElementById('pinInput'); if (pinInput.value === state.settings.pinCode) { hideModals(); pinInput.value = ''; callback(); } else { showAlert("Incorrect PIN", "The PIN you entered is incorrect."); pinInput.value = ''; } cleanup(); }; const cancelHandler = () => { document.getElementById('pinInput').value = ''; hideModals(); cleanup(); }; const cleanup = () => { document.getElementById('confirmPinBtn').removeEventListener('click', confirmHandler); document.getElementById('cancelPinBtn').removeEventListener('click', cancelHandler); }; document.getElementById('confirmPinBtn').addEventListener('click', confirmHandler); document.getElementById('cancelPinBtn').addEventListener('click', cancelHandler); }
         let visitInterval;
@@ -346,11 +346,10 @@
             let tapCount = 0; let tapTimer = null; panicBtn.addEventListener('click', () => { tapCount++; if (tapCount === 1) { tapTimer = setTimeout(() => { tapCount = 0; }, 1500); } if (tapCount === 3) { clearTimeout(tapTimer); tapCount = 0; triggerPanicAlert(); } });
             
             // Custom Long Press Handlers
-            const applyLongPress = (element, callback) => {
+            const applyLongPress = (element, callback, duration = 2000) => {
                 let timer;
                 let startX, startY;
                 const tolerance = 10; // 10px tolerance for movement
-                const pressDuration = 2000;
 
                 const start = (e) => {
                     if (element.disabled) return;
@@ -361,10 +360,14 @@
                     }
                     element.classList.add('pressing');
                     timer = setTimeout(() => {
-                        callback();
+                        if (timer) { // Check if timer is still active
+                            callback();
+                        }
+                        // Reset state on successful press or if timer runs out
+                        clearTimeout(timer);
                         timer = null;
                         element.classList.remove('pressing');
-                    }, pressDuration);
+                    }, duration);
                 };
 
                 const cancel = () => {
@@ -431,4 +434,3 @@
     </script>
 </body>
 </html>
-
