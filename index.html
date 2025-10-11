@@ -123,7 +123,7 @@
 
         <div id="lockedPage" class="page h-full flex-col justify-between items-center p-6 text-center animate-fadeIn">
             <div class="w-full flex justify-end">
-                 <button id="panicBtn" class="w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full text-white font-bold text-2xl flex items-center justify-center shadow-lg border-4 border-red-800">SOS</button>
+                 <button id="panicBtn" class="selectable-item w-20 h-20 bg-red-600 hover:bg-red-700 rounded-full text-white font-bold text-2xl flex items-center justify-center shadow-lg border-4 border-red-800">SOS</button>
             </div>
             <div class="flex-grow flex flex-col justify-center">
                 <p class="text-xl text-gray-400">Currently at</p>
@@ -211,8 +211,8 @@
 
                  <h3 class="font-semibold text-lg text-blue-400">4. While On-Site</h3>
                  <ul class="list-disc list-inside space-y-2">
-                    <li><strong>Extend Time:</strong> Press and hold the <strong>"Extend 10 Mins"</strong> button and enter your PIN.</li>
-                    <li><strong>Depart Safely:</strong> When you are finished, press and hold the <strong>"DEPART"</strong> button.</li>
+                    <li><strong>Extend Time:</strong> Press and hold the <strong>"Extend 10 Mins"</strong> button for 1.5 seconds and enter your PIN.</li>
+                    <li><strong>Depart Safely:</strong> When you are finished, press and hold the <strong>"DEPART"</strong> button for 1.5 seconds.</li>
                     <li><strong>Panic Alert (SOS):</strong> In an emergency, **triple-tap the red "SOS" button** to send an immediate alert.</li>
                 </ul>
                 
@@ -220,7 +220,7 @@
                  <ul class="list-disc list-inside space-y-2">
                     <li>The app will vibrate and chime 2 minutes before your time is up.</li>
                     <li>If you go overdue, the system will automatically email your emergency contact.</li>
-                    <li>If an alert is sent, press and hold the <strong>"I AM SAFE"</strong> button (and enter PIN) to cancel.</li>
+                    <li>If an alert is sent, press and hold the <strong>"I AM SAFE"</strong> button for 1.5 seconds (and enter PIN) to cancel.</li>
                 </ul>
 
                 <h3 class="font-semibold text-lg text-blue-400 mt-4">Privacy Note</h3>
@@ -345,8 +345,7 @@
             durationSlider.addEventListener('input', (e) => { state.visitDurationMinutes = DURATION_STEPS[parseInt(e.target.value)]; durationDisplay.textContent = formatDuration(state.visitDurationMinutes); updateArrivedButtonState(); });
             let tapCount = 0; let tapTimer = null; panicBtn.addEventListener('click', () => { tapCount++; if (tapCount === 1) { tapTimer = setTimeout(() => { tapCount = 0; }, 1500); } if (tapCount === 3) { clearTimeout(tapTimer); tapCount = 0; triggerPanicAlert(); } });
             
-            // Custom Long Press Handlers
-            const applyLongPress = (element, callback, duration = 2000) => {
+            const applyLongPress = (element, callback, duration = 1500) => {
                 let timer;
                 let startX, startY;
                 const tolerance = 10; // 10px tolerance for movement
